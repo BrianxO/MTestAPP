@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">MTestAPP</string>
+    <string name="app_name">MTestApp</string>
+    <string name="secondary_title">Atlnta,GA</string>
+    <string name="temp">102°F</string>
+    <string name="fltemp">Feels Like 98°F</string>
+    <string name="lowtmp">Low:95°F</string>
+    <string name="hightmp">High:90°F</string>
+    <string name="humidity">Humidity:10%</string>
+    <string name="pressure">Pressure:1023 HPA</string>
 </resources>
