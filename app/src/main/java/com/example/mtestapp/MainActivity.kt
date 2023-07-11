@@ -21,27 +21,60 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.compose.material3.Button
+
+
+
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MTestAppScreen()
+            MTestApp()
         }
     }
 }
 
 @Composable
-fun MTestAppScreen() {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
-        MTestAppTitle()
-        MTestAppBox()
-        MTestAppStats()
-        Spacer(modifier = Modifier.height(16.dp))
-        MTestAppContext()
+fun MTestApp() {
+    val navController = rememberNavController()
+
+    NavHost(navController = navController, startDestination = "current_conditions") {
+        composable("current_conditions") {
+            MTestAppScreen(navController = navController)
+        }
+        composable("forecast_screen") {
+            ForecastScreen()
+        }
     }
 }
+
+
+@Composable
+fun MTestAppScreen(navController: NavController) {
+    Column(Modifier.fillMaxSize()) {
+        MTestAppTitle()
+        Column(Modifier.weight(1f)) {
+            MTestAppBox()
+            MTestAppStats(navController)
+            Spacer(modifier = Modifier.height(16.dp))
+            MTestAppContext()
+        }
+        Button(
+            onClick = { navController.navigate("forecast_screen") },
+            modifier = Modifier.fillMaxWidth().padding(7.dp)
+        ) {
+            Text(text = "Forecast")
+        }
+    }
+}
+
+
 
 @Composable
 fun MTestAppTitle() {
@@ -57,7 +90,7 @@ fun MTestAppTitle() {
 }
 
 @Composable
-fun MTestAppStats() {
+fun MTestAppStats(navController: NavController) {
     val temperature = stringResource(R.string.temp)
     val feelsLike = stringResource(R.string.fltemp)
     val degreeSymbol = "\u00B0"
@@ -89,9 +122,9 @@ fun MTestAppStats() {
                 .size(100.dp)
                 .padding(end = 13.dp)
                 .align(Alignment.CenterVertically)
-                )
+        )
+        }
     }
-}
 
 @Composable
 fun MTestAppContext() {
@@ -130,5 +163,6 @@ fun MTestAppBox() {
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    MTestAppScreen()
+    val navController = rememberNavController()
+    MTestAppScreen(navController = navController)
 }
