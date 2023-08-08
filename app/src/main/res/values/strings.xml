@@ -8,4 +8,6 @@
     <string name="humidity">Humidity:10%</string>
     <string name="pressure">Pressure:1023 HPA</string>
     <string name="forecast_screen_title">Forecast</string>
+    <string name="weather_icon" />
+    <string name="title" />
 </resources>

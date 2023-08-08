@@ -4,165 +4,258 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.compose.material3.Button
+import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberImagePainter
+import dagger.hilt.android.AndroidEntryPoint
 
 
-
-
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MTestApp()
-        }
-    }
-}
+            MtestAppTheme {
+                val navController = rememberNavController()
 
-@Composable
-fun MTestApp() {
-    val navController = rememberNavController()
-
-    NavHost(navController = navController, startDestination = "current_conditions") {
-        composable("current_conditions") {
-            MTestAppScreen(navController = navController)
-        }
-        composable("forecast_screen") {
-            ForecastScreen()
-        }
-    }
-}
-
-
-@Composable
-fun MTestAppScreen(navController: NavController) {
-    Column(Modifier.fillMaxSize()) {
-        MTestAppTitle()
-        Column(Modifier.weight(1f)) {
-            MTestAppBox()
-            MTestAppStats(navController)
-            Spacer(modifier = Modifier.height(16.dp))
-            MTestAppContext()
-        }
-        Button(
-            onClick = { navController.navigate("forecast_screen") },
-            modifier = Modifier.fillMaxWidth().padding(7.dp)
-        ) {
-            Text(text = "Forecast")
-        }
-    }
-}
-
-
-
-@Composable
-fun MTestAppTitle() {
-    val titleColor = Color.Red
-
-    Surface(modifier = Modifier.fillMaxWidth(), color = titleColor) {
-        Text(
-            text = stringResource(R.string.app_name),
-            modifier = Modifier.padding(16.dp),
-            color = Color.White
-        )
-    }
-}
-
-@Composable
-fun MTestAppStats(navController: NavController) {
-    val temperature = stringResource(R.string.temp)
-    val feelsLike = stringResource(R.string.fltemp)
-    val degreeSymbol = "\u00B0"
-
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = buildAnnotatedString {
-                    append(temperature)
-                    withStyle(style = SpanStyle(fontSize = 75.sp)) {
-                        append(" $degreeSymbol")
+                NavHost(navController = navController, startDestination = "weather") {
+                    composable("weather") {
+                        val currentConditionsViewModel: CurrentConditionsViewModel = hiltViewModel()
+                        MTestAppScreen(navController, currentConditionsViewModel)
                     }
-                },
-                modifier = Modifier.padding(start = 16.dp),
-                fontSize = 75.sp
-            )
-            Text(
-                text = feelsLike,
-                modifier = Modifier
-                    .size(200.dp, 60.dp)
-                    .padding(16.dp),
-                fontSize = 14.sp
-            )
-        }
-        Image(
-            painter = painterResource(id = R.drawable.sun),
-            contentDescription = null,
-            modifier = Modifier
-                .size(100.dp)
-                .padding(end = 13.dp)
-                .align(Alignment.CenterVertically)
-        )
+                    composable("forecast/{zipCode}") { backStackEntry ->
+                        ForecastScreen(backStackEntry.arguments?.getString("ZipCode") ?: "55378")
+                    }
+                }
+
+            }
         }
     }
 
-@Composable
-fun MTestAppContext() {
-    Column(Modifier.padding(start = 6.dp)) {
-        val low = stringResource(R.string.lowtmp)
-        val high = stringResource(R.string.hightmp)
-        val humidity = stringResource(R.string.humidity)
-        val pressure = stringResource(R.string.pressure)
-
-        Text(text = low)
-        Text(text = high)
-        Text(text = humidity)
-        Text(text = pressure)
-    }
-}
-
-@Composable
-fun MTestAppBox() {
-    val location = stringResource(R.string.secondary_title)
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.TopCenter
+    @Composable
+    fun MTestAppScreen(
+        navController: NavController,
+        currentConditionsViewModel: CurrentConditionsViewModel
     ) {
-        Text(
-            text = location,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(13.dp)
-        )
+        val currentConditionsViewModel: CurrentConditionsViewModel = hiltViewModel()
+        val weatherState by currentConditionsViewModel.weatherState.observeAsState()
+        val safeWeatherState = weatherState ?: CurrentConditionsViewModel.WeatherState.Loading
+
+        val zipCode = "55378"
+
+        val isValidInput by currentConditionsViewModel.isValidInput.observeAsState(true)
+        val inputZipCode by currentConditionsViewModel.inputZipCode.observeAsState("")
+        val showDialog = remember { mutableStateOf(false) }
+
+        LaunchedEffect(currentConditionsViewModel) {
+            currentConditionsViewModel.getCurrentData(zipCode)
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            when (safeWeatherState) {
+                is CurrentConditionsViewModel.WeatherState.Loading -> {
+                    Text(text = "Loading ", fontSize = 20.sp, textAlign = TextAlign.Center)
+                }
+
+                is CurrentConditionsViewModel.WeatherState.Success -> {
+                    val weatherData = (weatherState as CurrentConditionsViewModel.WeatherState.Success).currentData
+                    val location = "${weatherData.cityName}, ${weatherData.sys?.country}"
+                    val currentForecast = weatherData.mainForecast ?: return
+                    val temperature = "${currentForecast.temp}\u00B0"
+                    val feelsLike = "Feels like ${currentForecast.feelsLike}\u00B0"
+                    val lowTemp = "Low ${currentForecast.temp_min}\u00B0"
+                    val highTemp = "High ${currentForecast.temp_max}\u00B0"
+                    val humidity = "Humidity ${currentForecast.humidity}%"
+                    val pressure = "Pressure ${currentForecast.pressure} hPA"
+                    val weatherIcon = weatherData.iconUrl
+
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp)
+                            .background(Color.Blue),
+
+                        contentAlignment = Alignment.CenterStart
+
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.title),
+                            fontSize = 20.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(start = 24.dp),
+                            color = Color.Black
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = location, fontSize = 20.sp, textAlign = TextAlign.Center)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(0.5f)
+                                .padding(50.dp)
+                        ) {
+                            Text(text = temperature, fontSize = 48.sp)
+                            Text(text = feelsLike, fontSize = 14.sp)
+                        }
+
+                        Image(
+                            painter = rememberImagePainter(weatherIcon),
+                            contentDescription = stringResource(id = R.string.weather_icon),
+                            modifier = Modifier
+                                .align(Alignment.CenterVertically)
+                                .size(150.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(0.2f)
+                                .padding(25.dp)
+                        ) {
+                            Text(text = lowTemp, fontSize = 20.sp)
+                            Text(text = highTemp, fontSize = 20.sp)
+                            Text(text = humidity, fontSize = 20.sp)
+                            Text(text = pressure, fontSize = 20.sp)
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            val zip = if (currentConditionsViewModel.inputZipCode.value.isNullOrBlank()) {
+                                zipCode
+                            } else {
+                                currentConditionsViewModel.inputZipCode.value
+                            }
+                            navController.navigate("forecast/$zip")
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Blue),
+                        modifier = Modifier
+                            .width(200.dp)
+                            .height(60.dp),
+                        shape = RectangleShape
+                    ) {
+                        Text("Forecast", fontSize = 20.sp, color = Color.White)
+                    }
+
+                    TextField(
+                        value = inputZipCode,
+                        onValueChange = { newValue -> currentConditionsViewModel.inputZipCode.value = newValue },
+                        label = { Text("Zip Code") },
+                        modifier = Modifier.padding(top = 16.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            currentConditionsViewModel.validateAndFetchData()
+                            if (!isValidInput) {
+                                showDialog.value = true
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Blue),
+                        modifier = Modifier
+                            .padding(top = 16.dp)
+                            .width(200.dp)
+                            .height(60.dp),
+                        shape = RectangleShape
+                    ) {
+                        Text("Search", fontSize = 20.sp, color = Color.White)
+                    }
+
+                    if (!isValidInput) {
+                        showDialog.value = true
+                    }
+
+                    if (showDialog.value) {
+                        AlertDialog(
+                            onDismissRequest = {
+                                showDialog.value = false
+                            },
+                            title = {
+                                Text(text = "Error")
+                            },
+                            text = {
+                                Text("Invalid Zip Code!")
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        showDialog.value = false
+                                        currentConditionsViewModel.resetValidationFlag()
+                                    }
+                                ) {
+                                    Text("OK")
+                                }
+                            }
+                        )
+                    }
+                }
+
+                is CurrentConditionsViewModel.WeatherState.Error -> {
+                    val error = (safeWeatherState).error
+                    Text(text = "Error: $error", fontSize = 20.sp, color = Color.Red)
+                }
+            }
+        }
     }
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    val navController = rememberNavController()
-    MTestAppScreen(navController = navController)
-}
